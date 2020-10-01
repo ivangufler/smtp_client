@@ -3,59 +3,34 @@
 #include <string.h>
 #include "smtp.h"
 
-/*
-int main() {
-
-
-
-  const int FLAGS = 0;
-
-  printf("Läuft\n");
-
-  char data[1024] = { 0 };
-  //receive response code
-  int bytesread = recv(sock, data, sizeof(data), FLAGS);
-  if(bytesread <= 0) {
-    printf("Socket was closed");
-    return 0; //socket was closed
-  }
-  printf("%s", data);
-
-  char buffer[] = "HELO\n";
-  send(sock, buffer, strlen(buffer), FLAGS);
-
-  memset(data, 0, strlen(data));
-
-  bytesread = recv(sock, data, sizeof(data), FLAGS);
-  printf("%s", data);
-
-  //print ("Bitte E-Mail Adresse eingeben:")
-}
-*/
-
 static const char ip[] = "164.68.110.182";
 static const int port = 25;
 
 int main() {
 
+  // create socket and connect to it
   int socket = createSocket(ip, port);
 
+  // connection error
   if (socket < 0) {
-    //fuck
+    printf("# Connection failed. Please check the ip of the server and if the smtp service is enabled.\n");
     return -1;
   }
 
   int len = 512;
   char *data = calloc(len, sizeof(char));
 
+  // read first response code after connection
   int ret = readResponse(socket, data, len);
 
+  // response code != 220 means connection error, end service
   if (ret != 220) {
-    printf("Connection refused.\n");
+    printf("# Connection refused.\n");
     return -1;
   }
 
-  printf("Connection established successfully!\n\n");
+  // print connection is active msg
+  printf("# Connection established successfully!\n\n");
 
   int state = 0;
   char *input;
@@ -63,92 +38,151 @@ int main() {
 
   ret = 0;
 
-  while(1) {
+
+  do {
 
     data = calloc(len, sizeof(char));
     input = calloc(len, sizeof(char));
 
     switch (state) {
-      //enter sender email
+      //enter the sender email
       case 0: {
-
+        // get input and send command
         if (ret == 0) {
-          printf("Please enter your e-mail address: ");
+          printf(">> Please enter your e-mail address: ");
           fgets(input, 255, stdin);
 
           strcpy(data, "MAIL FROM: ");
           strcat(data, input);
         }
+        // cmd was sended, check response codes
         else {
           if (ret == 250)
             state++;
           else if (ret == 501)
-            printf("Invalid e-mail address.\n");
+            printf("# Invalid e-mail address.\n");
           else
-            printf("Unkow error");
+            printf("# Unkown error");
         }
         break;
       }
-      //enter recipients
-      case 1: {
 
+      //enter the recipient email
+      case 1: {
+        // get input and send command
         if (ret == 0) {
-          printf("Please enter the e-mail address of the recipient: ");
+          printf(">> Please enter the e-mail address of the recipient: ");
           fgets(input, 255, stdin);
 
           strcpy(data, "RCPT TO: ");
           strcat(data, input);
         }
+        // cmd was sended, check response codes
         else {
           if (ret == 250)
             state++;
-          else if (ret == 454)
-            printf("Invalid e-mail addresssss.\n");
-          else if (ret == 501)
-            printf("Invalid e-mail address.\n");
+          else if (ret == 454 || ret == 501)
+            printf("# Invalid e-mail address.\n");
           else if (ret == 550)
-            printf("This user does not exist.\n");
+            printf("# This user does not exist.\n");
           else
-            printf("Unkown error");
+            printf("# Unkown error");
         }
         break;
       }
-      //enter Subject
+
+      //send the data command to the server
+      case 2: {
+        // send command
+        if (ret == 0)
+          strcpy(data, "DATA\n");
+        // cmd was sended, check response codes
+        else {
+          if (ret == 354)
+            state++;
+          else
+            printf("# Unkown error\n");
+        }
+        break;
+      }
+
+      // enter the subject
       case 3: {
 
-        char subject = calloc(len, sizeof(char));
+        printf("\n>> Enter the subject: ");
+        fgets(input, 255, stdin);
+        strcpy(data, "Subject: ");
+        strcat(data, input);
+        printf(">> Enter your message (end it by typing a '.' in an empty line):\n\n");
+        state++;
+        break;
+      }
 
-        if (ret == 0) {
-          printf("Please enter the subject: ");
-          fgets(subject, 255, stdin);
+      // enter the message and confirm the sending
+      case 4: {
 
-          strcpy(data, "RCPT TO: ");
-          strcat(data, input);
-        }
-        else {
-          if (ret == 250)
-            state++;
-          else if (ret == 454)
-            printf("Invalid e-mail addresssss.\n");
-          else if (ret == 501)
-            printf("Invalid e-mail address.\n");
-          else if (ret == 550)
-            printf("This user does not exist.\n");
-          else
-            printf("Unkow error");
+        // get a line form the user
+        printf(">> ");
+        fgets(input, 255, stdin);
+        strcpy(data, input);
+
+        // empty line with '.' means end of the message
+        if (strlen(input) == 2 && input[0] == '.') {
+
+          printf("\n");
+
+          // let the user confirm the sending
+          do {
+            // get user input (y means sending the mail, n means aborting the operation)
+            printf(">> Sure you want to send this email? (Y/N): ");
+            input = calloc(len, sizeof(char));
+            fgets(input, 255, stdin);
+
+            // input is valid, exit the loop
+            if (input[0] == 'N' || input[0] == 'n') {
+              ret = -1;
+              break;
+            } else if (input[0] == 'Y' || input[0] == 'y')
+              break;
+          } while(1);
+
+          // end the mail sending procedure
+          state = -1;
         }
         break;
       }
     }
 
+    // send a command
     if (ret == 0) {
+      //send the command
       sendCommand(socket, data, strlen(data));
-      ret = readResponse(socket, data, len);
-      printf("%i\n", ret);
+      // only at the beginning read the response code
+      if (state < 3) {
+        ret = readResponse(socket, data, len);
+        // response code < 0 means connection error
+        if (ret < 0) {
+          printf("# Connection error. Please try again later.\n");
+          return -1;
+        }
+      }
     } else {
       ret = 0;
     }
 
-  }
+  } while(state != -1);
+
+  // user aborted the sending
+  if (ret == 0)
+    printf("# Your e-mail has not been sent.\n");
+  // email was sended
+  else if (ret == 250)
+    printf("# Your e-mail has been sent successfully!\n");
+  // some other error ocurred
+  else
+    printf("# Unexpected error during sending your email. Please try again later!\n");
+
+  // bye message
+  printf("Bye!\n");
 
 }
