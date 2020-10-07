@@ -150,6 +150,8 @@ int main (int argc, char *argv[]) {
 
               // input is valid, exit the loop
               if (input[0] == 'N' || input[0] == 'n') {
+                closeSocket(socket);
+                socket = createSocket(argv[1], port);
                 ret = -1;
                 break;
               } else if (input[0] == 'Y' || input[0] == 'y')

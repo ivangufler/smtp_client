@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <unistd.h>
 
 const int FLAGS = 0;
 
@@ -28,6 +29,10 @@ int createSocket(const char *ip, const int port) {
   }
   // return the socket
   return sock;
+}
+
+void closeSocket(int sock) {
+  close(sock);
 }
 
 int sendCommand(int socket, char *buffer, int buflen) {
