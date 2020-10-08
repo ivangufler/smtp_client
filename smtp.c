@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
@@ -29,6 +30,22 @@ int createSocket(const char *ip, const int port) {
   }
   // return the socket
   return sock;
+}
+
+char* hostnameToIp(char* hostname) {
+
+	struct hostent *he;
+	struct in_addr **addr_list;
+
+	if ((he = gethostbyname(hostname)) != NULL)	{
+    addr_list = (struct in_addr **) he->h_addr_list;
+
+    for(int i = 0; addr_list[i] != NULL; i++) {
+      //Return the first one
+      return inet_ntoa(*addr_list[i]);
+    }
+	}
+	return "";
 }
 
 void closeSocket(int sock) {

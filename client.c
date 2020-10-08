@@ -7,20 +7,20 @@ static const int port = 25;
 
 int main (int argc, char *argv[]) {
 
-  //ip adress as argument
+  //hostname/domain as argument
   if (argc < 2) {
-      printf("Please enter an IP address: ./client.out [ip adress]\n");
+      printf("Please enter an domain name: ./client.out [domain.example]\n");
       return -1;
   }
 
   printf("# Connecting... \n");
-
+  printf("%s\n", hostnameToIp(argv[1]));
   // create socket and connect to it
-  int socket = createSocket(argv[1], port);
+  int socket = createSocket(hostnameToIp(argv[1]), port);
 
   // connection error
   if (socket < 0) {
-    printf("# Connection failed. Please check the ip of the server and if the smtp service is enabled.\n");
+    printf("# Connection failed. Please check if the inserted domain name is correct and if the smtp service is enabled.\n");
     return -1;
   }
 
@@ -139,7 +139,6 @@ int main (int argc, char *argv[]) {
           // empty line with '.' means end of the message
           if (strlen(input) == 2 && input[0] == '.') {
 
-
             printf("\n");
             // let the user confirm the sending
             do {
@@ -151,7 +150,12 @@ int main (int argc, char *argv[]) {
               // input is valid, exit the loop
               if (input[0] == 'N' || input[0] == 'n') {
                 closeSocket(socket);
+
+                //create new socket and read first response
                 socket = createSocket(argv[1], port);
+                readResponse(socket, data, len);
+                data = calloc(len, sizeof(char));
+
                 ret = -1;
                 break;
               } else if (input[0] == 'Y' || input[0] == 'y')
