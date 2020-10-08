@@ -14,7 +14,7 @@ int main (int argc, char *argv[]) {
   }
 
   printf("# Connecting... \n");
-  printf("%s\n", hostnameToIp(argv[1]));
+
   // create socket and connect to it
   int socket = createSocket(hostnameToIp(argv[1]), port);
 
@@ -72,7 +72,7 @@ int main (int argc, char *argv[]) {
             else if (ret == 501)
               printf("# Invalid e-mail address.\n");
             else
-              printf("# Unkown error");
+              printf("# Unknown error\n");
           }
           break;
         }
@@ -96,7 +96,7 @@ int main (int argc, char *argv[]) {
             else if (ret == 550)
               printf("# This user does not exist.\n");
             else
-              printf("# Unkown error");
+              printf("# Unknown error\n");
           }
           break;
         }
@@ -111,7 +111,7 @@ int main (int argc, char *argv[]) {
             if (ret == 354)
               state++;
             else
-              printf("# Unkown error\n");
+              printf("# Unknown error\n");
           }
           break;
         }
