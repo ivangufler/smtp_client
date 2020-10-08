@@ -1,7 +1,7 @@
 # SMTP Client
 
 A simple smtp client in C the programming language.
-The client is started in the command line with the IPv4 address of the SMTP server as argument.
+The client is started in the command line with the domain name of the SMTP server as an argument.
 The client connects to the SMTP server via port 25 and then allows to send e-mails to this server.
 
 The user must specify the sender address, the destination address, the subject and the text of the message. If an input is invalid, an error message is displayed.
@@ -38,7 +38,7 @@ make
 To run the client, perform:
 
 ```
-./client.out [IPv4_OF_THE_SERVER]
+./client.out [DOMAIN.EXAMPLE]
 ```
 
 If you want to recompile the project, use the following command before running the above command again:
