@@ -15,8 +15,9 @@ int main (int argc, char *argv[]) {
 
   printf("# Connecting... \n");
 
+  char* ip = hostnameToIp(argv[1]);
   // create socket and connect to it
-  int socket = createSocket(hostnameToIp(argv[1]), port);
+  int socket = createSocket(ip, port);
 
   // connection error
   if (socket < 0) {
@@ -152,7 +153,7 @@ int main (int argc, char *argv[]) {
                 closeSocket(socket);
 
                 //create new socket and read first response
-                socket = createSocket(argv[1], port);
+                socket = createSocket(ip, port);
                 readResponse(socket, data, len);
                 data = calloc(len, sizeof(char));
 
